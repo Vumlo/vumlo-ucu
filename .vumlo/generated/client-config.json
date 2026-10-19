@@ -1,5 +1,5 @@
 {
-  "api_url": "https://vumlo-ucu.vercel.app/api/v1",
+  "api_url": "https://vumlo-ucu.partum55.me/api/v1",
   "logo": "logo.png",
   "modules": {},
   "public": {
@@ -11,7 +11,7 @@
       "time_zone": "Europe/Kyiv"
     },
     "server": {
-      "public_origin": "https://vumlo-ucu.vercel.app"
+      "public_origin": "https://vumlo-ucu.partum55.me"
     }
   },
   "version": "0.1.0",
