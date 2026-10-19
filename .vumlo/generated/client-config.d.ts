@@ -2,6 +2,11 @@
 export type ClientConfig = {
   /** Where the web app reaches the API: `server.public_origin` + `/api/v1`. */
   api_url: string;
+  /** What the desktop app and the web app's sign-in page agree on (ADR-0062). */
+  desktop: {
+    /** The scheme of the app's links, `vumlo-ucu` for `vumlo-ucu://course?id=...`. */
+    url_scheme: string;
+  };
   /** The generated logo, relative to the generated directory. Absent without `institution.logo`. */
   logo?: string | null;
   /** Every optional module of this build line and whether it is on. */
