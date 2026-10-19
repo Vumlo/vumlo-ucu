@@ -15,6 +15,7 @@ source archive of vumlo-core, fetched here and never edited.
 | `.env.example` | the secrets, as a template. `.env` is never committed |
 | `vendor/vumlo-core/` | the vumlo-core release of `core.version`, unpacked as it is (`backend/` the API and worker, `web/` the web app, `deploy/`). Committed so that Vercel can build `web/`; never edited, `scripts/fetch-core` replaces it |
 | `.vumlo/generated/` | the branding (`client-config.json`, icons, manifest) made from `vumlo.toml` and `brand/`; committed because Vercel has no `vumlo-cli`. Refresh it with `scripts/brand` |
+| `.github/workflows/desktop-release.yml` | builds the UCU desktop app (Linux, Windows, macOS) from `vendor/vumlo-core` and `vumlo.toml`; copied from core's `desktop/release/`, see below |
 | `aws/` | `stack.yaml` (CloudFormation: the EC2 instance for the API, worker and PostgreSQL, ECR, IAM) and `Caddyfile` (HTTPS for the API domain) |
 | `scripts/fetch-core` | downloads the pinned release, checks it, unpacks it into `vendor/vumlo-core` |
 | `scripts/brand` | `brand apply`, then copies the result to `.vumlo/generated` |
@@ -60,6 +61,14 @@ Import this repository as a Vercel project and set:
   that address; if you change it, run `scripts/brand` and commit `.vumlo/generated`.
 
 Only the web app runs on Vercel. The API, the worker and PostgreSQL run on AWS (`aws/`).
+
+## Desktop app
+
+The same web app in a Tauri window, with offline reading and drafts (`vendor/vumlo-core/docs/desktop.md`). Its name,
+icon and server come from `vumlo.toml` and `brand/`; its links are `vumlo-ucu://...`. A tag `desktop-v1.0.0` builds
+the installers in GitHub Actions and puts them in a **draft** Release; without signing secrets (`WINDOWS_CERTIFICATE`,
+`APPLE_CERTIFICATE`, ...) they are unsigned, and the docs say what people see. Publish the draft, then in the web app
+(Admin, Institution, Desktop app) paste the address of each installer: the download notice and page appear.
 
 ## Release procedure
 
