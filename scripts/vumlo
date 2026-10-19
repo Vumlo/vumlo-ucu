@@ -21,7 +21,7 @@ if [ -f "$root/.env" ]; then
 elif [ ! -f "$core/.env" ]; then
     # `config check` and `brand apply` need no secrets, only a database URL to be set. Compose wants
     # the file to exist. This one holds a placeholder, never used to connect anywhere.
-    printf 'DATABASE_URL=postgres://placeholder:placeholder@localhost:5432/placeholder\n' >"$core/.env"
+    printf 'DATABASE_URL=postgres://placeholder:placeholder@localhost:5432/placeholder\nVUMLO__AUTH__GOOGLE__CLIENT_SECRET=placeholder\n' >"$core/.env"
     chmod 600 "$core/.env"
 fi
 

@@ -56,10 +56,10 @@ max_concurrent_hashes = 8          # password hashes and checks at once, ~19 MiB
 # Sign-in with Google (ADR-0047). Without this section the two endpoints answer 404. A Google
 # account needs a verified email in allowed_domains. Create the client in the Google Cloud console
 # (a web application) and list redirect_uri as an authorized redirect URI.
-# [auth.google]
-# client_id = "....apps.googleusercontent.com"
+[auth.google]
+client_id = "303017161919-9pkpr8ilhhtsc6021bm2jjaih5fqrbab.apps.googleusercontent.com"
 # The client secret is VUMLO__AUTH__GOOGLE__CLIENT_SECRET in the environment, not a key here.
-# redirect_uri = "https://lms.example.edu/auth/google/callback"   # the callback page of the web app
+redirect_uri = "https://vumlo-ucu.partum55.me/auth/google/callback"   # the callback page of the web app
 
 # Outgoing mail (ADR-0045): the links of self-registration and password reset. Without this section
 # both are off (404). Sent by the outbox worker, never inside a request.
