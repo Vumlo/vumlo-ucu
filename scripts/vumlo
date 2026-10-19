@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Runs vumlo-cli, or docker compose, for the UCU installation.
+#
+#   scripts/vumlo config check | brand apply | db migrate | admin create ... | doctor | ...
+#   scripts/vumlo compose build | up -d | down | ps | logs ...
+#
+# The UCU files (vumlo.toml, brand/, .env) are copied into vendor/vumlo-core, and core's own
+# deploy/compose.yaml is used as it is, with compose.ucu.yaml on top. Nothing of core is edited.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+core="$root/vendor/vumlo-core"
+
+[ -d "$core" ] || "$root/scripts/fetch-core"
+
+cp "$root/vumlo.toml" "$core/vumlo.toml"
+rm -rf "$core/brand"
+cp -r "$root/brand" "$core/brand"
+if [ -f "$root/.env" ]; then
+    install -m 600 "$root/.env" "$core/.env"
+elif [ ! -f "$core/.env" ]; then
+    : >"$core/.env" # `init` and `config check` need no secrets; compose wants the file to exist
+fi
+
+UCU_CORE_VERSION="$(tr -d '[:space:]' <"$root/core.version")"
+VUMLO_UID="$(id -u)"
+VUMLO_GID="$(id -g)"
+export UCU_CORE_VERSION VUMLO_UID VUMLO_GID
+export COMPOSE_FILE="$core/deploy/compose.yaml:$root/compose.ucu.yaml" COMPOSE_ENV_FILES="$core/.env"
+
+if [ "${1:-}" = "compose" ]; then
+    shift
+    exec docker compose "$@"
+fi
+
+# Commands that never touch the database must not start PostgreSQL.
+case "${1:-}" in
+    init | config | brand | version | modules)
+        exec docker compose run --rm --no-deps vumlo-cli "$@"
+        ;;
+esac
+exec docker compose run --rm vumlo-cli "$@"

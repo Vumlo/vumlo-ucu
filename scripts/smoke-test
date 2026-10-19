@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Builds the UCU installation from this repository and proves that it runs: config check, brand
+# apply, build, migrate, a throwaway administrator, start, doctor, the API and the web app. A
+# throwaway PostgreSQL volume is used and removed. Needs Docker. It does not touch your .env.
+#
+#   scripts/smoke-test
+#
+# The administrator's password is generated, printed once if VERIFY_PRINT_PASSWORD=1, never stored.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+
+if [ -f .env ]; then
+    echo "smoke-test: .env exists; the smoke test uses its own and would replace the copy in vendor/. Move .env away first." >&2
+    exit 2
+fi
+
+step() { echo; echo "== $*"; }
+teardown() {
+    status=$?
+    scripts/vumlo compose down --volumes --remove-orphans >/dev/null 2>&1 || true
+    rm -f "$root/vendor/vumlo-core/.env"
+    exit "$status"
+}
+trap teardown EXIT
+
+step "fetch the pinned core"
+scripts/fetch-core
+
+# A throwaway .env for the vendored core only (scripts/vumlo copies .env there when it exists).
+db_password="$(openssl rand -hex 16)"
+mkdir -p vendor/vumlo-core
+install -m 600 /dev/null vendor/vumlo-core/.env
+printf 'DATABASE_URL=postgres://vumlo:%s@postgres:5432/vumlo\nPOSTGRES_PASSWORD=%s\n' "$db_password" "$db_password" >vendor/vumlo-core/.env
+
+name="$(sed -n 's/^name = "\(.*\)"/\1/p' vumlo.toml | head -n 1)"
+
+step "config check, brand apply"
+scripts/vumlo config check
+scripts/vumlo brand apply
+grep -q "$name" vendor/vumlo-core/.vumlo/generated/client-config.json
+
+step "build"
+scripts/vumlo version
+scripts/vumlo compose build
+
+step "migrate, administrator, start"
+scripts/vumlo compose up -d --wait postgres
+scripts/vumlo db migrate
+admin_password="$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)"
+printf '%s\n' "$admin_password" | scripts/vumlo admin create admin@ucu.edu.ua --name Smoke --surname Test --password-stdin
+if [ "${VERIFY_PRINT_PASSWORD:-0}" = 1 ]; then echo "throwaway administrator: admin@ucu.edu.ua / $admin_password"; fi
+scripts/vumlo compose up -d
+
+step "doctor, the API, the web app"
+ok=0
+for _ in $(seq 1 60); do
+    if curl -fsS http://127.0.0.1:8080/api/v1/health >/dev/null 2>&1 && curl -fsS http://127.0.0.1:3000/ >/dev/null 2>&1; then ok=1; break; fi
+    sleep 2
+done
+[ "$ok" = 1 ] || { scripts/vumlo compose ps; scripts/vumlo compose logs --tail 40 core web; echo "the services did not come up" >&2; exit 1; }
+scripts/vumlo doctor
+institution="$(curl -fsS http://127.0.0.1:8080/api/v1/institution)"
+echo "$institution"
+for expected in "$name" '"short_name":"UCU"' '"language":"uk"' '"time_zone":"Europe/Kyiv"'; do
+    printf '%s' "$institution" | grep -qF "$expected" || { echo "GET /institution lacks $expected" >&2; exit 1; }
+done
+curl -fsS http://127.0.0.1:3000/api/v1/institution | grep -qF "$name"
+curl -fsS http://127.0.0.1:3000/ | grep -qF "$name"
+login="$(printf '{"email":"admin@ucu.edu.ua","password":"%s","client":"app"}' "$admin_password")"
+curl -fsS -H 'content-type: application/json' -d "$login" http://127.0.0.1:8080/api/v1/auth/login >/dev/null
+for icon in favicon.ico icon-192.png site.webmanifest; do
+    curl -fsS -o /dev/null "http://127.0.0.1:3000/brand/$icon"
+done
+echo
+echo "smoke-test: the UCU installation works"

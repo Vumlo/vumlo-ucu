@@ -1,0 +1,23 @@
+# UCU's additions to vumlo-core's deploy/compose.yaml, which is used as it ships (never copied or
+# edited here). scripts/vumlo puts the two together:
+#   COMPOSE_FILE=vendor/vumlo-core/deploy/compose.yaml:compose.ucu.yaml
+# Only what is UCU's own is set here: the core release as a label of every image built through
+# scripts/vumlo. (The project keeps core's name, `vumlo`, so that core's deploy/update.sh finds the
+# same containers and the same database volume.)
+
+x-labels: &labels
+  org.ucu.vumlo.core-version: ${UCU_CORE_VERSION:?run scripts/vumlo, which sets it}
+
+services:
+  vumlo-cli:
+    build:
+      labels: *labels
+  core:
+    build:
+      labels: *labels
+  worker:
+    build:
+      labels: *labels
+  web:
+    build:
+      labels: *labels

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Downloads the vumlo-core release named in core.version, checks it, and unpacks it into
+# vendor/vumlo-core (not in git). It fails, and leaves vendor/ as it was, on any mismatch:
+#
+#   - the SHA-256 of the archive must be the one pinned in core.sha256 (committed here), and
+#   - it must also be the one in the SHA256SUMS of that GitHub Release, and
+#   - the unpacked workspace version must be core.version.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+
+version="$(tr -d '[:space:]' <core.version)"
+pinned="$(tr -d '[:space:]' <core.sha256)"
+archive="vumlo-$version-source.tar.gz"
+base="https://github.com/Vumlo/vumlo-core/releases/download/v$version"
+dest="vendor/vumlo-core"
+
+fail() { echo "fetch-core: $*" >&2; exit 1; }
+
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "core.version is not X.Y.Z: $version"
+[[ "$pinned" =~ ^[0-9a-f]{64}$ ]] || fail "core.sha256 is not a SHA-256: $pinned"
+
+if [ -f "$dest/.core-sha256" ] && [ "$(cat "$dest/.core-sha256")" = "$pinned" ]; then
+    echo "fetch-core: vumlo-core $version is already in $dest"
+    exit 0
+fi
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+echo "fetch-core: downloading $archive"
+curl --proto '=https' --tlsv1.2 -fsSL -o "$tmp/$archive" "$base/$archive" || fail "cannot download $base/$archive"
+curl --proto '=https' --tlsv1.2 -fsSL -o "$tmp/SHA256SUMS" "$base/SHA256SUMS" || fail "cannot download $base/SHA256SUMS"
+
+actual="$(sha256sum "$tmp/$archive" | cut -d' ' -f1)"
+[ "$actual" = "$pinned" ] || fail "the archive is $actual, but core.sha256 pins $pinned"
+grep -q "^$actual  $archive\$" "$tmp/SHA256SUMS" || fail "the SHA256SUMS of the release does not list $actual for $archive"
+
+mkdir "$tmp/unpacked"
+tar -xzf "$tmp/$archive" -C "$tmp/unpacked" --strip-components=1 --no-same-owner
+[ -x "$tmp/unpacked/vumlo" ] || fail "the archive has no ./vumlo"
+unpacked="$(sed -n '/^\[workspace.package\]/,/^\[/{s/^version *= *"\(.*\)"/\1/p}' "$tmp/unpacked/backend/Cargo.toml")"
+[ "$unpacked" = "$version" ] || fail "the archive is version $unpacked, not $version"
+
+mkdir -p vendor
+rm -rf "$dest"
+mv "$tmp/unpacked" "$dest"
+echo "$actual" >"$dest/.core-sha256"
+echo "fetch-core: vumlo-core $version ($actual) is in $dest"
