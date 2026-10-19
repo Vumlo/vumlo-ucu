@@ -1,0 +1,46 @@
+{
+  "name": "vumlo-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "brand": "node scripts/brand.mjs",
+    "dev": "node scripts/brand.mjs --optional && next dev",
+    "dev:mock": "node scripts/brand.mjs --optional && NEXT_PUBLIC_API_MOCKING=enabled next dev",
+    "build": "node scripts/brand.mjs && next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings 0 && node scripts/check-colors.mjs",
+    "typecheck": "node scripts/brand.mjs && tsc --noEmit",
+    "gen:api": "openapi-typescript openapi.json -o src/lib/api/schema.d.ts",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "next": "16.4.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^10.13.0",
+    "eslint-config-next": "^14.2.35",
+    "msw": "^3.0.3",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.3"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  },
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "allowScripts": {
+    "unrs-resolver@1.12.2": true
+  }
+}

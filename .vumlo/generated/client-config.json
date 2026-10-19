@@ -1,0 +1,19 @@
+{
+  "api_url": "https://vumlo-ucu.vercel.app/api/v1",
+  "logo": "logo.png",
+  "modules": {},
+  "public": {
+    "institution": {
+      "grading_scale": "hundred",
+      "language": "uk",
+      "name": "Український католицький університет",
+      "short_name": "UCU",
+      "time_zone": "Europe/Kyiv"
+    },
+    "server": {
+      "public_origin": "https://vumlo-ucu.vercel.app"
+    }
+  },
+  "version": "0.1.0",
+  "web_modules": []
+}

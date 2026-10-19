@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Generates the web app's branding from vumlo.toml and brand/ (vumlo-cli `brand apply`) and keeps
+# the result in .vumlo/generated, which is committed: Vercel builds the web app from it, and has no
+# vumlo-cli. Run it after every change of vumlo.toml or brand/, and commit the result.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+
+scripts/vumlo brand apply
+rm -rf .vumlo/generated
+mkdir -p .vumlo
+cp -r vendor/vumlo-core/.vumlo/generated .vumlo/generated
+echo "brand: .vumlo/generated is up to date; commit it"

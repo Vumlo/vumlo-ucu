@@ -19,7 +19,10 @@ cp -r "$root/brand" "$core/brand"
 if [ -f "$root/.env" ]; then
     install -m 600 "$root/.env" "$core/.env"
 elif [ ! -f "$core/.env" ]; then
-    : >"$core/.env" # `init` and `config check` need no secrets; compose wants the file to exist
+    # `config check` and `brand apply` need no secrets, only a database URL to be set. Compose wants
+    # the file to exist. This one holds a placeholder, never used to connect anywhere.
+    printf 'DATABASE_URL=postgres://placeholder:placeholder@localhost:5432/placeholder\n' >"$core/.env"
+    chmod 600 "$core/.env"
 fi
 
 UCU_CORE_VERSION="$(tr -d '[:space:]' <"$root/core.version")"

@@ -15,9 +15,9 @@ bind_addr = "127.0.0.1:8080"
 # The origin browsers use to reach Vumlo (no path): where the web app is served. Cookie-authenticated
 # POST/PATCH/DELETE requests must send exactly this Origin, and every URL the installation
 # publishes (the API, mail links, the manifest) is derived from it. Production: https://lms.example.edu
-public_origin = "http://localhost:3000" # UCU: TRIAL VALUE. Set the real https address before deploying anywhere.
+public_origin = "https://vumlo-ucu.vercel.app" # UCU: where people open Vumlo (the web app on Vercel; the API is proxied to AWS)
 # Behind a reverse proxy that overwrites this header, rate limits use it instead of the TCP peer.
-# client_ip_header = "x-real-ip"
+client_ip_header = "x-real-ip" # UCU: Vercel sets it to the visitor's address; aws/Caddyfile passes it on
 # Trusted browser frontends hosted on another origin (ADR-0041). Each entry is an exact origin:
 # scheme://host[:port], lowercase, no path, no wildcard, no default port. Empty (the default) means
 # no CORS headers at all. A listed origin gets CORS with credentials and may send cookie-authenticated
@@ -42,7 +42,6 @@ env_file = ".env"   # the secrets file vumlo-cli reads (KEY=VALUE lines); never 
 
 [auth]
 password_min_length = 12 # 8..=128
-cookie_secure = false     # UCU: PLAIN-HTTP TRIAL VALUE. Delete this line (true) together with a real https public_origin.
 allowed_domains = ["ucu.edu.ua"] # who may sign up themselves (ADR-0046); empty: nobody
 # Login limits (ADR-0038). A client is an IPv4 address or the /64 of an IPv6 one. A school or a
 # lecture hall behind one address raises login_ip_burst (and lowers login_ip_replenish_seconds):

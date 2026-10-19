@@ -1,0 +1,55 @@
+[package]
+name = "server"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[lib]
+name = "server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "vumlo-server"
+path = "src/main.rs"
+
+[features]
+default = []
+# Optional modules (ADR-0054): the feature of a module is named after it, on server and vumlo-cli
+
+[dependencies]
+anyhow.workspace = true
+api-types.workspace = true
+argon2.workspace = true
+axum.workspace = true
+axum-extra.workspace = true
+chrono.workspace = true
+clap.workspace = true
+db.workspace = true
+garde.workspace = true
+lettre.workspace = true
+module-api.workspace = true
+openidconnect.workspace = true
+rand.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tower-http.workspace = true
+tower_governor.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+utoipa.workspace = true
+utoipa-axum.workspace = true
+utoipa-scalar.workspace = true
+uuid.workspace = true
+vumlo-config.workspace = true
+
+[dev-dependencies]
+base64.workspace = true
+chrono-tz.workspace = true
+reqwest.workspace = true
+
+[lints]
+workspace = true

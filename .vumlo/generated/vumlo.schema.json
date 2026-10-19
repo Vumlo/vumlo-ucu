@@ -1,0 +1,479 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "auth": {
+      "default": {
+        "allowed_domains": [],
+        "cookie_secure": true,
+        "google": null,
+        "login_account_max_attempts": 10,
+        "login_account_window_minutes": 15,
+        "login_ip_burst": 50,
+        "login_ip_replenish_seconds": 1,
+        "max_concurrent_hashes": 8,
+        "password_min_length": 12
+      },
+      "properties": {
+        "allowed_domains": {
+          "default": [],
+          "description": "The email domains that may sign up, by password (ADR-0046) or with Google (ADR-0047).\nEmpty: nobody.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "cookie_secure": {
+          "default": true,
+          "type": "boolean"
+        },
+        "google": {
+          "additionalProperties": false,
+          "default": null,
+          "description": "Sign-in with Google (ADR-0047). Absent: the two endpoints are off.",
+          "properties": {
+            "client_id": {
+              "type": "string"
+            },
+            "client_secret": {
+              "description": "Secret: `VUMLO__AUTH__GOOGLE__CLIENT_SECRET`.",
+              "type": "string",
+              "x-visibility": "secret"
+            },
+            "issuer": {
+              "default": "https://accounts.google.com",
+              "description": "Default: Google. Another issuer is for a test server.",
+              "type": "string"
+            },
+            "redirect_uri": {
+              "description": "Where Google sends the browser back: the callback page of the web app.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "client_id",
+            "client_secret",
+            "redirect_uri"
+          ],
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "login_account_max_attempts": {
+          "default": 10,
+          "description": "Failed or in-flight login attempts per account in one window before the account is\nlocked for the rest of it.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "login_account_window_minutes": {
+          "default": 15,
+          "description": "The length of that window, in minutes.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "login_ip_burst": {
+          "default": 50,
+          "description": "Login attempts one client may make in a burst. A client is an IPv4 address or an IPv6 /64\n(ADR-0038). A school behind one NAT raises this.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "login_ip_replenish_seconds": {
+          "default": 1,
+          "description": "Seconds until a client gets one more login attempt back after a burst.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_concurrent_hashes": {
+          "default": 8,
+          "description": "Password hashes and checks that may run at once. Each takes about 19 MiB.",
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "password_min_length": {
+          "default": 12,
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object",
+      "x-visibility": "private"
+    },
+    "cli": {
+      "default": {
+        "core_url": null,
+        "env_file": ".env"
+      },
+      "description": "What `vumlo-cli` itself needs.",
+      "properties": {
+        "core_url": {
+          "default": null,
+          "description": "Where `doctor` reaches the core. Default: `server.public_origin`.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-visibility": "private"
+        },
+        "env_file": {
+          "default": ".env",
+          "description": "The file of `KEY=VALUE` lines the CLI reads the secrets from, relative to the config file.",
+          "type": "string",
+          "x-visibility": "private"
+        }
+      },
+      "type": "object"
+    },
+    "config_version": {
+      "default": 1,
+      "description": "The layout of this file. Newer than the binary understands: refused.",
+      "format": "uint32",
+      "minimum": 0,
+      "type": "integer",
+      "x-visibility": "private"
+    },
+    "database": {
+      "properties": {
+        "max_connections": {
+          "default": 10,
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer",
+          "x-visibility": "private"
+        },
+        "url": {
+          "default": "<redacted>",
+          "description": "Secret: `DATABASE_URL` in the environment, never the file. Empty here means \"not set\";\nthe loader refuses that.",
+          "type": "string",
+          "x-visibility": "secret"
+        }
+      },
+      "type": "object"
+    },
+    "editor": {
+      "default": {
+        "profiles": {},
+        "video_providers": [
+          "youtube",
+          "vimeo"
+        ]
+      },
+      "description": "What the document editor may offer (ADR-0025, ADR-0027). Plain data: `AppState::new` applies\nit to the profiles in code (it can only narrow them) and rejects what does not fit.",
+      "properties": {
+        "profiles": {
+          "additionalProperties": {
+            "additionalProperties": false,
+            "properties": {
+              "features": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "features"
+            ],
+            "type": "object"
+          },
+          "default": {},
+          "description": "Per profile name (`full`, `question`, `option`, `student`): the features it keeps.",
+          "type": "object"
+        },
+        "video_providers": {
+          "default": [
+            "youtube",
+            "vimeo"
+          ],
+          "description": "The providers a video block may name. Empty switches video off.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object",
+      "x-visibility": "private"
+    },
+    "institution": {
+      "additionalProperties": false,
+      "description": "The `[institution]` section as it is loaded. `mode` has no default (ADR-0031).",
+      "properties": {
+        "grading_scale": {
+          "anyOf": [
+            {
+              "description": "How points relate to the grade (ADR-0022).",
+              "oneOf": [
+                {
+                  "const": "twelve",
+                  "description": "The score of an assignment is its grade: at most 12 points per assignment.",
+                  "type": "string"
+                },
+                {
+                  "const": "hundred",
+                  "description": "The regular assignments of a course add up to at most 100 points.",
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "x-visibility": "public"
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-visibility": "public"
+        },
+        "logo": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-visibility": "private"
+        },
+        "mode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-visibility": "private"
+        },
+        "name": {
+          "type": "string",
+          "x-visibility": "public"
+        },
+        "short_name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-visibility": "public"
+        },
+        "time_zone": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-visibility": "public"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "log": {
+      "default": {
+        "format": "pretty"
+      },
+      "properties": {
+        "format": {
+          "default": "pretty",
+          "enum": [
+            "pretty",
+            "json"
+          ],
+          "type": "string",
+          "x-visibility": "private"
+        }
+      },
+      "type": "object"
+    },
+    "mail": {
+      "additionalProperties": false,
+      "default": null,
+      "description": "Outgoing mail (ADR-0045). Absent: the features that must send mail are off.",
+      "properties": {
+        "from": {
+          "description": "The sender, `name@example.edu` or `Vumlo <no-reply@example.edu>`.",
+          "type": "string"
+        },
+        "link_base": {
+          "default": null,
+          "description": "The origin links in mails point to. Default: `server.public_origin`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "transport": {
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "description": "An SMTP relay.",
+              "properties": {
+                "host": {
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "smtp",
+                  "type": "string"
+                },
+                "password": {
+                  "default": null,
+                  "description": "Secret: `VUMLO__MAIL__TRANSPORT__PASSWORD`.",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "x-visibility": "secret"
+                },
+                "port": {
+                  "default": null,
+                  "description": "Default: 465 for `tls`, 587 for `starttls`, 25 for `none`.",
+                  "format": "uint16",
+                  "maximum": 65535,
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "tls": {
+                  "default": "starttls",
+                  "oneOf": [
+                    {
+                      "const": "starttls",
+                      "description": "Plain connection upgraded with STARTTLS (port 587).",
+                      "type": "string"
+                    },
+                    {
+                      "const": "tls",
+                      "description": "TLS from the first byte (port 465).",
+                      "type": "string"
+                    },
+                    {
+                      "const": "none",
+                      "description": "No encryption: a local test server such as Mailpit.",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "username": {
+                  "default": null,
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "host"
+              ],
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "description": "One `.eml` file per message in `dir`: for development and tests.",
+              "properties": {
+                "dir": {
+                  "type": "string"
+                },
+                "kind": {
+                  "const": "file",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "dir"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "from",
+        "transport"
+      ],
+      "type": [
+        "object",
+        "null"
+      ],
+      "x-visibility": "private"
+    },
+    "modules": {
+      "additionalProperties": {
+        "type": [
+          "boolean",
+          "object"
+        ],
+        "x-free": true
+      },
+      "default": {},
+      "description": "Optional add-on modules: `name = true` or a `[modules.name]` table (ADR-0054).",
+      "type": "object",
+      "x-visibility": "private"
+    },
+    "server": {
+      "properties": {
+        "allowed_origins": {
+          "default": [],
+          "description": "Origins of trusted browser frontends hosted away from the API (ADR-0041), each exactly\n`scheme://host[:port]`. Empty: no CORS headers, and only `public_origin` passes the CSRF check.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "x-visibility": "private"
+        },
+        "bind_addr": {
+          "default": "127.0.0.1:8080",
+          "type": "string",
+          "x-visibility": "private"
+        },
+        "client_ip_header": {
+          "default": null,
+          "description": "Header that carries the client IP when a reverse proxy sets it (e.g. `x-real-ip`).\nUnset: the TCP peer address is used.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-visibility": "private"
+        },
+        "public_origin": {
+          "description": "The origin browsers use to reach the API, e.g. `https://lms.example.edu`.\nCookie-authenticated unsafe requests must carry exactly this `Origin`. Every URL the\ninstallation publishes is derived from it.",
+          "type": "string",
+          "x-visibility": "public"
+        }
+      },
+      "required": [
+        "public_origin"
+      ],
+      "type": "object"
+    },
+    "web": {
+      "default": {
+        "dir": "web"
+      },
+      "description": "Where the web app lives, for `vumlo-cli build web` and `doctor`.",
+      "properties": {
+        "dir": {
+          "default": "web",
+          "description": "The web app's directory, relative to the config file.",
+          "type": "string",
+          "x-visibility": "private"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "required": [
+    "server",
+    "institution",
+    "database"
+  ],
+  "title": "Settings",
+  "type": "object"
+}

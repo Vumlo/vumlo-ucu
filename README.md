@@ -13,7 +13,11 @@ source archive of vumlo-core, fetched here and never edited.
 | `brand/logo.png` | the UCU monogram, from the university's logo set (the `institution.logo` of `vumlo.toml`) |
 | `compose.ucu.yaml` | UCU's additions on top of core's own `deploy/compose.yaml` (a label with the core version on every image) |
 | `.env.example` | the secrets, as a template. `.env` is never committed |
-| `scripts/fetch-core` | downloads the pinned release, checks it, unpacks it into `vendor/vumlo-core` (not in git) |
+| `vendor/vumlo-core/` | the vumlo-core release of `core.version`, unpacked as it is (`backend/` the API and worker, `web/` the web app, `deploy/`). Committed so that Vercel can build `web/`; never edited, `scripts/fetch-core` replaces it |
+| `.vumlo/generated/` | the branding (`client-config.json`, icons, manifest) made from `vumlo.toml` and `brand/`; committed because Vercel has no `vumlo-cli`. Refresh it with `scripts/brand` |
+| `aws/` | `stack.yaml` (CloudFormation: the EC2 instance for the API, worker and PostgreSQL, ECR, IAM) and `Caddyfile` (HTTPS for the API domain) |
+| `scripts/fetch-core` | downloads the pinned release, checks it, unpacks it into `vendor/vumlo-core` |
+| `scripts/brand` | `brand apply`, then copies the result to `.vumlo/generated` |
 | `scripts/bump-core <version>` | moves to another core release; undoes itself if anything fails |
 | `scripts/vumlo` | runs `vumlo-cli` or `docker compose` for UCU (`scripts/vumlo doctor`, `scripts/vumlo compose ps`) |
 | `scripts/smoke-test` | builds and runs a throwaway installation and checks it |
@@ -42,6 +46,20 @@ scripts/vumlo doctor
 real `https://` address (behind Caddy, `vendor/vumlo-core/deploy/Caddyfile`) and delete the
 `cookie_secure` line. `institution.mode` is `university` and cannot be changed after the first
 start. No `[mail]` is configured, so sign-up by email and password reset are off until it is.
+
+## Vercel (the web app)
+
+Import this repository as a Vercel project and set:
+
+- **Root Directory:** `vendor/vumlo-core/web` (with "Include source files outside of the Root
+  Directory" on). Framework: Next.js. Install and build commands: the defaults (`npm ci`, `npm run build`).
+- **Environment variables:**
+  - `VUMLO_GENERATED_DIR` = `../../../.vumlo/generated` (where the build reads the branding)
+  - `VUMLO_API_ORIGIN` = `https://<the API domain>` (where `/api/v1` is proxied: the AWS back end)
+- **Domain:** the address in `server.public_origin` of `vumlo.toml`. The branding was generated for
+  that address; if you change it, run `scripts/brand` and commit `.vumlo/generated`.
+
+Only the web app runs on Vercel. The API, the worker and PostgreSQL run on AWS (`aws/`).
 
 ## Release procedure
 

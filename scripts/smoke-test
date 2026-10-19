@@ -33,6 +33,9 @@ db_password="$(openssl rand -hex 16)"
 mkdir -p vendor/vumlo-core
 install -m 600 /dev/null vendor/vumlo-core/.env
 printf 'DATABASE_URL=postgres://vumlo:%s@postgres:5432/vumlo\nPOSTGRES_PASSWORD=%s\n' "$db_password" "$db_password" >vendor/vumlo-core/.env
+# vumlo.toml is the production configuration (https address, secure cookies). Here the stack runs on
+# this machine over plain HTTP, so these two values are overridden, and nothing else.
+printf 'VUMLO__SERVER__PUBLIC_ORIGIN=http://localhost:3000\nVUMLO__AUTH__COOKIE_SECURE=false\n' >>vendor/vumlo-core/.env
 
 name="$(sed -n 's/^name = "\(.*\)"/\1/p' vumlo.toml | head -n 1)"
 
@@ -69,7 +72,7 @@ done
 curl -fsS http://127.0.0.1:3000/api/v1/institution | grep -qF "$name"
 curl -fsS http://127.0.0.1:3000/ | grep -qF "$name"
 login="$(printf '{"email":"admin@ucu.edu.ua","password":"%s","client":"app"}' "$admin_password")"
-curl -fsS -H 'content-type: application/json' -d "$login" http://127.0.0.1:8080/api/v1/auth/login >/dev/null
+curl -fsS -H 'content-type: application/json' -H 'x-real-ip: 127.0.0.1' -d "$login" http://127.0.0.1:8080/api/v1/auth/login >/dev/null
 for icon in favicon.ico icon-192.png site.webmanifest; do
     curl -fsS -o /dev/null "http://127.0.0.1:3000/brand/$icon"
 done
