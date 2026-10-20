@@ -19,17 +19,41 @@ export function versionOf(version) {
   return match ? `${match[1]}.${match[2]}.${match[3]}` : "0.0.0";
 }
 
-/** The name on the installer and the shortcut: the institution's own, without what a file name cannot hold. */
+/**
+ * The name of the app: the short name, as the programs and links are named. A Debian package is named after it, and
+ * Debian allows only ASCII letters, digits and `+ - .` in a package name, so a short name in another alphabet
+ * (`УКУ`) gives way to the URL scheme (`vumlo-uku`, which is ASCII by definition).
+ */
+export function appNameOf(institution, scheme) {
+  const short = productNameOf(institution.short_name || institution.name);
+  return /^[A-Za-z0-9][A-Za-z0-9 .+-]*$/.test(short) ? short : scheme;
+}
+
+/** A name for the installer's metadata and the shortcut, without what a file name cannot hold. */
 export function productNameOf(institutionName) {
   const name = (institutionName ?? "").replace(/[\\/:*?"<>|\u0000-\u001f]/g, " ").replace(/\s+/g, " ").trim();
   return name || "Vumlo";
 }
 
+/**
+ * Tauri names an installer `<productName>_<version>_<arch>.<ext>`, and the product name is the institution's own,
+ * with spaces and perhaps Cyrillic. What is handed out is named after the scheme instead: `vumlo-ucu_0.2.1_amd64.deb`.
+ * Returns null for a file that does not start with the product name.
+ */
+export function installerNameFor(fileName, productName, scheme) {
+  const prefix = `${productName}_`;
+  return fileName.startsWith(prefix) ? `${scheme}_${fileName.slice(prefix.length)}` : null;
+}
+
 const ICONS = ["32x32.png", "128x128.png", "128x128@2x.png", "icon.icns", "icon.ico"];
 
 /** The Tauri configuration to merge over `tauri.conf.json` for this institution. */
-export function tauriConfigFor(client, { frontendDist, iconDir }) {
-  const productName = productNameOf(client.public.institution.name);
+export function tauriConfigFor(client, { frontendDist, iconDir, desktopTemplate }) {
+  const institution = client.public.institution;
+  // The app is called by the short name (`UCU`), as the programs and links are (`vumlo-ucu`); the full name, which
+  // can be long and in any alphabet, is the publisher and in the descriptions.
+  const productName = appNameOf(institution, client.desktop.url_scheme);
+  const fullName = productNameOf(institution.name);
   return {
     productName,
     // The program's file name is the scheme, `vumlo-ucu`: unique per institution, ASCII, and what the
@@ -42,9 +66,12 @@ export function tauriConfigFor(client, { frontendDist, iconDir }) {
     bundle: {
       icon: ICONS.map((name) => `${iconDir}/${name}`),
       category: "Education",
-      publisher: productName,
+      // Tauri's own desktop file has `Exec=<program>` with no `%u`: the system opens a link with the program but does not
+      // hand it the address, so a `vumlo-ucu://` link would start the app and never arrive. Ours adds it.
+      linux: { deb: { desktopTemplate }, rpm: { desktopTemplate } },
+      publisher: fullName,
       shortDescription: `${productName}: courses, deadlines and grades`,
-      longDescription: `The desktop app of ${productName}, a Vumlo installation. Read your courses and deadlines without a connection and send your work when you are back online.`,
+      longDescription: `The desktop app of ${fullName}, a Vumlo installation. Read your courses and deadlines without a connection and send your work when you are back online.`,
     },
   };
 }
