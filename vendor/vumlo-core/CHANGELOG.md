@@ -10,6 +10,27 @@ must do, in order, besides getting the new release. See [RELEASING.md](RELEASING
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-10-20
+
+The names of the desktop installers, and of the app.
+
+### Fixed
+
+- **A login at the moment an administrator resets that user's password could fail with 500** (a deadlock in the database: the
+  login held the user while it waited for the password, the reset held the password and wanted the user). The login now
+  locks them in the order the reset writes them. Nothing to do on upgrade.
+- **The installers of the desktop app are named after the URL scheme**, `vumlo-ucu_0.2.2_amd64.deb`, `..._x64-setup.exe`,
+  `..._aarch64.dmg`, `..._x64.dmg`, `..._amd64.AppImage`, and not after the institution's name. A name with spaces or
+  Cyrillic broke the checksum step of `desktop-release.yml`, so no release was made. `scripts/build.mjs` copies them to
+  `desktop/dist/`.
+- **A `vumlo-ucu://` link reaches the desktop app on Linux.** The `.deb`'s desktop file had `Exec=vumlo-ucu` without `%u`, so
+  "Open app" at the end of a sign-in with Google started the app but never gave it the code. (The AppImage is built by
+  Tauri with its own desktop file, which cannot be replaced: for Google sign-in on Linux use the `.deb`; password sign-in works in both.)
+- **The desktop app is called by the short name** (`institution.short_name`, `UCU`) in the shortcut and the installer's
+  metadata, not by the full name; the full name is the publisher. (A name in another alphabet made a `.deb` that dpkg
+  refuses, "invalid package name"; the app is then called by its URL scheme.) **Upgrade notes:** nothing to change in `vumlo.toml`. If you copied `desktop-release.yml` into your
+  repository, copy it again from `desktop/release/`.
+
 ## [0.2.1] - 2026-10-20
 
 The Vumlo logo.
@@ -128,7 +149,8 @@ There is nothing to upgrade from; follow [docs/install.md](docs/install.md).
 - Any optional module, and an end-user CLI (ADR-0055).
 - Published container images: the images are built on your server from the archive.
 
-[Unreleased]: https://github.com/Vumlo/vumlo-core/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/Vumlo/vumlo-core/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/Vumlo/vumlo-core/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Vumlo/vumlo-core/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Vumlo/vumlo-core/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Vumlo/vumlo-core/releases/tag/v0.1.0

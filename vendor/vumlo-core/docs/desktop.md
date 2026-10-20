@@ -30,8 +30,8 @@ Everything comes from `vumlo.toml`, as for the web app, and `vumlo-cli brand app
 | Key | What it becomes |
 | --- | --- |
 | `server.public_origin` | The server the app talks to (compiled in). The identifier of the app is its host, reversed: `lms.ucu.edu.ua` is `ua.edu.ucu.lms`. |
-| `institution.name` | The name of the app, of the installer and of the shortcut. |
-| `institution.short_name` | With `vumlo-`, the URL scheme of the app's links, `vumlo-ucu://...`. |
+| `institution.short_name` | The name of the app and of its shortcut (`UCU`; a short name that is not in Latin letters gives way to the scheme, `vumlo-uku`, because a Debian package can only be named in ASCII), and, with `vumlo-`, the URL scheme of its links, `vumlo-ucu://...`, and the name of the installers, `vumlo-ucu_0.2.2_amd64.deb`. |
+| `institution.name` | The publisher of the installer and its description (the full name can be long, and in any alphabet). |
 | `institution.logo` | The icon of the app, in every size each system wants. Without it the app has Vumlo's placeholder icon. |
 | `desktop.url_scheme` (optional) | The scheme of the links, `vumlo-` and letters, digits and hyphens. **Set it if your short name has no Latin letters**; otherwise it is plain `vumlo`, and two institutions' apps on one computer would fight over `vumlo://`. |
 
@@ -57,7 +57,7 @@ node scripts/build.mjs -- --bundles deb,appimage      # Linux; nsis on Windows, 
 
 `scripts/build.mjs` builds the web app as a static export, makes the icons from your logo, writes the
 configuration of the installer (`desktop/gen/`) and runs `tauri build`. The installers are in
-`desktop/target/release/bundle/`. It warns, before the long part, if the server address is `http` or
+`desktop/dist/`, named `<scheme>_<version>_<arch>.<ext>`, for example `vumlo-ucu_0.2.1_amd64.deb`. It warns, before the long part, if the server address is `http` or
 `localhost`, or the scheme is plain `vumlo`. If your configuration is not beside `desktop/`, give the
 generated directory: `node scripts/build.mjs --generated /path/to/.vumlo/generated`.
 
@@ -120,7 +120,8 @@ at once. They install over the old version and keep their data.
 - **Linux needs a keychain.** The session is kept in the system keychain (GNOME Keyring, KWallet or another Secret
   Service), never in a file. On a desktop without one, signing in says so.
 - **Links** (`vumlo-ucu://course?id=...`) need the app installed and registered by its installer. A bare AppImage
-  is registered by the tool that integrates AppImages.
+  is registered by the tool that integrates AppImages, and its desktop file cannot pass the link on: on Linux, sign-in
+  with Google needs the `.deb` (sign-in with a password works in both).
 - **What is on the device.** What the person read and what they have not sent are in one file in the app's data
   folder (`~/.local/share/<identifier>`, `%APPDATA%\<identifier>`, `~/Library/Application Support/<identifier>`),
   not encrypted: disk encryption of the device protects it. Signing out deletes it.
