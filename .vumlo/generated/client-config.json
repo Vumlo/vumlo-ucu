@@ -1,5 +1,8 @@
 {
   "api_url": "https://vumlo-ucu.partum55.me/api/v1",
+  "desktop": {
+    "url_scheme": "vumlo-ucu"
+  },
   "logo": "logo.png",
   "modules": {},
   "public": {
@@ -14,6 +17,6 @@
       "public_origin": "https://vumlo-ucu.partum55.me"
     }
   },
-  "version": "0.1.0",
+  "version": "0.2.1",
   "web_modules": []
 }

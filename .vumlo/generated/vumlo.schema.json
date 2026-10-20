@@ -155,6 +155,25 @@
       },
       "type": "object"
     },
+    "desktop": {
+      "additionalProperties": false,
+      "default": {
+        "url_scheme": null
+      },
+      "description": "The desktop app (ADR-0056, ADR-0062).",
+      "properties": {
+        "url_scheme": {
+          "default": null,
+          "description": "The URL scheme of the app's links, `vumlo-ucu://...`. Absent: `vumlo-` and the short name of the\ninstitution in ASCII letters and digits. It must be one the operating system can tell from the\nscheme of another institution's app on the same computer. The client config carries the scheme in use.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "x-visibility": "private"
+        }
+      },
+      "type": "object"
+    },
     "editor": {
       "default": {
         "profiles": {},

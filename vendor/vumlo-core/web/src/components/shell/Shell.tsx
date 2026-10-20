@@ -3,21 +3,28 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { BrandMark } from "@/components/BrandMark";
 import { Icon } from "@/components/Icon";
 import { navFor } from "@/lib/nav";
-import { fullName, useLogout, useMe, type User } from "@/lib/session";
+import { fullName, useMe, type User } from "@/lib/session";
 import { useTheme } from "@/lib/theme";
 import { initials } from "@/lib/format";
 import { useInstitution } from "@/lib/api/hooks/institution";
+import { useAppOffer } from "@/lib/downloads";
+import { OfflineBar } from "./OfflineBar";
+import { useSignOut } from "./useSignOut";
 import { useT } from "@/lib/i18n";
 import s from "./Shell.module.css";
+
+/** The address with its query string: a course screen is `/course?id=...`, and sign-in must come back to it. */
+const here = () => window.location.pathname + window.location.search;
 
 function AccountMenu({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-  const logout = useLogout();
+  const { signOut, dialog } = useSignOut();
   const t = useT();
+  const { links: appLinks } = useAppOffer();
 
   useEffect(() => {
     if (!open) return;
@@ -35,11 +42,6 @@ function AccountMenu({ user }: { user: User }) {
       document.removeEventListener("keydown", close);
     };
   }, [open]);
-
-  async function signOut() {
-    await logout.run();
-    router.replace("/login");
-  }
 
   return (
     <div ref={ref} className={s.actions}>
@@ -62,11 +64,17 @@ function AccountMenu({ user }: { user: User }) {
           <Link role="menuitem" href="/profile" className="menu-item" onClick={() => setOpen(false)}>
             <Icon name="user" size={16} /> {t("account.profile")}
           </Link>
-          <button type="button" role="menuitem" className="menu-item" onClick={signOut}>
+          {appLinks.length > 0 && (
+            <Link role="menuitem" href="/download" className="menu-item" onClick={() => setOpen(false)}>
+              <Icon name="download" size={16} /> {t("account.getApp")}
+            </Link>
+          )}
+          <button type="button" role="menuitem" className="menu-item" onClick={() => { setOpen(false); signOut(); }}>
             <Icon name="logout" size={16} /> {t("account.signOut")}
           </button>
         </div>
       )}
+      {dialog}
     </div>
   );
 }
@@ -93,9 +101,9 @@ export function Shell({ children }: { children: ReactNode }) {
   const mustChange = me.data?.must_change_password === true;
 
   useEffect(() => {
-    if (me.error?.status === 401) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    if (me.error?.status === 401) router.replace(`/login?next=${encodeURIComponent(here())}`);
     // A temporary password only opens the page that replaces it (ADR-0017).
-    else if (mustChange) router.replace(`/change-password?next=${encodeURIComponent(pathname)}`);
+    else if (mustChange) router.replace(`/change-password?next=${encodeURIComponent(here())}`);
   }, [me.error, mustChange, pathname, router]);
 
   if (!me.data || mustChange) {
@@ -114,7 +122,7 @@ export function Shell({ children }: { children: ReactNode }) {
     <>
       <header className={s.header}>
         <Link href="/" className={s.brand}>
-          <span aria-hidden="true" className={s.logo}>{institutionName.charAt(0)}</span>
+          <BrandMark name={institutionName} tile={s.logo} img={s.logoImg} />
           <span className={s.brandName}>{institutionName}</span>
         </Link>
         <nav aria-label={t("shell.main")} className={s.nav}>
@@ -139,6 +147,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </span>
         <AccountMenu user={user} />
       </header>
+      <OfflineBar role={user.role} />
       <main className={s.main}>{children}</main>
       <nav aria-label={t("shell.main")} className={s.tabs}>
         {nav.map((n) => (
